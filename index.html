@@ -75,7 +75,7 @@
         #poster-modal.show { display: flex; opacity: 1; }
         #poster-img {
             max-width: 90%;
-            max-height: 75vh; 
+            max-height: 80vh; 
             object-fit: contain;
             box-shadow: 0 25px 50px rgba(0,0,0,0.08);
             border-radius: 12px;
@@ -102,8 +102,10 @@
 
 <script>
 /**
- * 破碎重整计划 V4.3 - 大比例圆盘版
- * 修改点：增大了圆盘相对于屏幕的初始半径比例。
+ * 破碎重整计划 V4.5 - 微距裂痕版
+ * 修改点：
+ * 1. 大幅减小爆炸力度 (baseForce * 0.015)，防止碎片飞散太远。
+ * 2. 增加摩擦力 (friction: 0.90)，让碎片更快停下，形成裂而不散的效果。
  */
 
 const CONFIG = {
@@ -114,7 +116,8 @@ const CONFIG = {
         flowerPink: '#FFB7C5', flowerCenterPink: '#FF69B4',
         leafGreen: '#A8E6CF', leafDark: '#5FA894'
     },
-    physics: { friction: 0.93, stopThreshold: 0.05 }
+    // --- 修改点：加大摩擦力 (0.93 -> 0.90)，让物体更重，停得更快 ---
+    physics: { friction: 0.90, stopThreshold: 0.05 }
 };
 
 const STATE = { IDLE: 0, BROKEN: 1, GARDENING: 2 };
@@ -127,10 +130,25 @@ const canvas = document.getElementById('mainCanvas');
 const ctx = canvas.getContext('2d');
 const hintText = document.getElementById('topHint');
 
-// --- 碎片与花朵类 (保持不变) ---
+// --- 碎片与花朵类 ---
 class Shard {
     constructor(c, as, ae, e1, e2, r) { this.centerOrigin={...c}; this.r=r; this.x=c.x; this.y=c.y; this.rot=0; this.vx=0; this.vy=0; this.vr=0; this.as=as; this.ae=ae; this.e1=e1; this.e2=e2; }
-    explode() { const m=(this.as+this.ae)/2; const f=12*(0.9+Math.random()*0.4); this.vx=Math.cos(m)*f; this.vy=Math.sin(m)*f; this.vr=(Math.random()-0.5)*0.15; }
+    
+    explode() { 
+        const m=(this.as+this.ae)/2; 
+        
+        // --- 核心修改：极大幅度减小爆炸力 ---
+        // 原先是 0.04 (4%)，现在改为 0.015 (1.5%)
+        // 这会让碎片只移动很小一段距离，形成缝隙，而不是飞走
+        const baseForce = Math.min(width, height) * 0.015; 
+        
+        const f = baseForce * (0.8 + Math.random() * 0.4); 
+        
+        this.vx=Math.cos(m)*f; 
+        this.vy=Math.sin(m)*f; 
+        this.vr=(Math.random()-0.5)*0.05; // 旋转也减小一点
+    }
+    
     update() { if(currentState===STATE.BROKEN){ this.x+=this.vx; this.y+=this.vy; this.rot+=this.vr; this.vx*=CONFIG.physics.friction; this.vy*=CONFIG.physics.friction; this.vr*=CONFIG.physics.friction; return (Math.abs(this.vx)<CONFIG.physics.stopThreshold&&Math.abs(this.vy)<CONFIG.physics.stopThreshold); } return true; }
     draw(ctx) { ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.rot); ctx.beginPath(); const r=this.r; const c=15;
         const dl=(a,n,rev)=>{ for(let i=(rev?c:0); rev?i>=0:i<=c; rev?i--:i++){ const d=(i/c)*r; const off=(n[i-(rev?0:1)]||0)*(r*0.04); ctx.lineTo(Math.cos(a)*d+Math.cos(a+Math.PI/2)*off, Math.sin(a)*d+Math.sin(a+Math.PI/2)*off); }};
@@ -149,8 +167,13 @@ class Flower {
 // --- 初始化与交互 ---
 function initScene() {
     shards=[]; flowers=[]; const c=6; 
-    // --- 修改点：增大了圆盘半径比例，从 0.28 改为 0.36 ---
-    const r=Math.min(width,height)*0.36; 
+    
+    // 检测是否是小屏幕
+    const isMobile = width < 600;
+    // 既然碎片不飞那么远了，我们可以把初始圆盘稍微做大一点点，视觉更饱满
+    const sizeRatio = isMobile ? 0.33 : 0.38;
+    const r = Math.min(width, height) * sizeRatio; 
+
     let ang=[]; for(let i=0;i<c;i++)ang.push(Math.random()+0.2); const sum=ang.reduce((a,b)=>a+b,0); let curA=0; let aPts=ang.map(a=>{curA+=(a/sum)*Math.PI*2;return curA;}); const ns=[]; for(let i=0;i<c;i++){let n=[];for(let k=0;k<15;k++)n.push(Math.random()-0.5);ns.push(n);}
     for(let i=0;i<c;i++){ const s=(i==0)?aPts[c-1]-Math.PI*2:aPts[i-1]; const e=aPts[i]; shards.push(new Shard({x:centerX,y:centerY},s,e,(i==0)?ns[c-1]:ns[i-1],ns[i],r)); }
 }
@@ -161,10 +184,12 @@ function handleClick(e) { e.preventDefault(); if(currentState===STATE.IDLE){ cur
 function getPos(e) { const t=e.touches?e.touches[0]:e; return {x:t.clientX,y:t.clientY}; }
 function animate() { ctx.clearRect(0,0,width,height); if(currentState===STATE.BROKEN)shards.forEach(s=>s.update()); shards.forEach(s=>s.draw(ctx)); flowers.forEach(f=>{f.update();f.draw(ctx);}); requestAnimationFrame(animate); }
 
-// --- 海报生成 (保持完美居中的竖版逻辑) ---
+// --- 海报生成 ---
 document.getElementById('generateBtn').addEventListener('click', () => {
-    const posterWidth = width * 2; 
+    const baseWidth = width < 750 ? 1080 : width * 2;
+    const posterWidth = baseWidth;
     const posterHeight = posterWidth * (5 / 3);
+
     const pc = document.createElement('canvas');
     pc.width = posterWidth; pc.height = posterHeight;
     const pCtx = pc.getContext('2d');
@@ -173,10 +198,10 @@ document.getElementById('generateBtn').addEventListener('click', () => {
     pCtx.fillRect(0, 0, pc.width, pc.height);
     
     pCtx.save();
-    pCtx.scale(2, 2);
-    const posterCenterY_Scaled = posterHeight / 4;
-    const screenCenterY_Scaled = centerY;
-    const verticalShift = posterCenterY_Scaled - screenCenterY_Scaled;
+    const scaleFactor = posterWidth / width;
+    pCtx.scale(scaleFactor, scaleFactor);
+    const scaledPosterHeight = posterHeight / scaleFactor;
+    const verticalShift = (scaledPosterHeight / 2) - centerY;
     pCtx.translate(0, verticalShift);
     shards.forEach(s => s.draw(pCtx));
     flowers.forEach(f => f.draw(pCtx));
@@ -206,5 +231,4 @@ function closeModal() {
 window.addEventListener('resize', resize); resize(); animate();
 </script>
 </body>
-
 </html>
