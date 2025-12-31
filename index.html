@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>破碎重整计划</title>
+    <title>我的治愈花园</title>
     <style>
         :root {
             --bg-color: #E9F7EF;
@@ -21,6 +21,7 @@
             color: var(--text-color);
             touch-action: none;
             background: linear-gradient(135deg, #E9F7EF 0%, #F5FAFF 100%);
+            user-select: none;
         }
 
         #app {
@@ -30,6 +31,7 @@
 
         canvas { position: absolute; top: 0; left: 0; z-index: 1; }
 
+        /* 模态框样式 */
         #choice-modal {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
@@ -42,63 +44,23 @@
             transition: opacity 0.6s;
             pointer-events: none;
         }
-        #choice-modal.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        #choice-modal.show { opacity: 1; pointer-events: auto; }
 
-        .choice-content {
-            text-align: center;
-            max-width: 600px;
-        }
-
-        .choice-title {
-            font-size: 24px;
-            letter-spacing: 2px;
-            color: #4A6B5D;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .choice-subtitle {
-            font-size: 14px;
-            color: #8FAFA0;
-            margin-bottom: 40px;
-            letter-spacing: 1px;
-        }
-
-        .choice-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 30px;
-        }
+        .choice-content { text-align: center; max-width: 600px; }
+        .choice-title { font-size: 24px; letter-spacing: 2px; color: #4A6B5D; margin-bottom: 30px; line-height: 1.6; }
+        .choice-subtitle { font-size: 14px; color: #8FAFA0; margin-bottom: 40px; letter-spacing: 1px; }
+        .choice-buttons { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
 
         .choice-btn {
             background: linear-gradient(135deg, #A8E6CF, #DCEDC1);
-            color: #4A6B5D;
-            border: 2px solid transparent;
-            padding: 14px 24px;
-            font-family: var(--font-stack);
-            font-size: 15px;
-            letter-spacing: 1px;
-            cursor: pointer;
-            border-radius: 30px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(168, 230, 207, 0.3);
-            transform: scale(1);
+            color: #4A6B5D; border: 2px solid transparent;
+            padding: 14px 24px; font-family: var(--font-stack);
+            font-size: 15px; letter-spacing: 1px; cursor: pointer;
+            border-radius: 30px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(168, 230, 207, 0.3); transform: scale(1);
         }
-
-        .choice-btn:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 6px 20px rgba(168, 230, 207, 0.4);
-        }
-
-        .choice-btn:active {
-            transform: scale(0.98);
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        .choice-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 6px 20px rgba(168, 230, 207, 0.4); }
+        .choice-btn:active { transform: scale(0.98); }
         .choice-btn.selected {
             background: linear-gradient(135deg, #A8E6CF, #9DD9BC);
             border-color: #5FA894;
@@ -106,44 +68,18 @@
             transform: scale(1.03);
         }
 
-        .choice-btn.selected:hover {
-            transform: translateY(-2px) scale(1.04);
-            box-shadow: 0 0 30px rgba(95, 168, 148, 0.6), 0 6px 20px rgba(168, 230, 207, 0.5);
-        }
-
         .choice-confirm-btn {
             background: linear-gradient(135deg, #5FA894, #4A6B5D);
-            color: white;
-            border: none;
-            padding: 14px 40px;
-            font-size: 15px;
-            letter-spacing: 2px;
-            cursor: pointer;
-            border-radius: 30px;
-            transition: all 0.3s;
+            color: white; border: none; padding: 14px 40px;
+            font-size: 15px; letter-spacing: 2px; cursor: pointer;
+            border-radius: 30px; transition: all 0.3s;
             box-shadow: 0 4px 15px rgba(95, 168, 148, 0.3);
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            justify-content: center;
-            margin: 0 auto;
+            display: inline-flex; align-items: center; gap: 12px;
+            justify-content: center; margin: 0 auto;
         }
-
-        .choice-confirm-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-
-        .choice-confirm-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-owl {
-            width: 28px;
-            height: 28px;
-            display: inline-block;
-            flex-shrink: 0;
-        }
+        .choice-confirm-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .choice-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-owl { width: 28px; height: 28px; display: inline-block; flex-shrink: 0; }
 
         .ui-layer {
             position: absolute; z-index: 10;
@@ -155,110 +91,61 @@
             transition: opacity 0.8s;
         }
 
+        /* 这里的 opacity: 0 是初始状态，animation 被移除了 */
         .hint-text {
             font-size: 16px; letter-spacing: 2px;
             color: #8FAFA0; text-align: center;
-            opacity: 0.85;
+            opacity: 0; 
             text-shadow: 0 1px 5px rgba(255,255,255,0.8);
-            transition: all 0.5s;
-            line-height: 1.8;
-            font-weight: 300;
+            transition: all 0.5s; line-height: 1.8; font-weight: 300;
+        }
+
+        /* 只有添加了这个 visible 类，动画才会开始，文字才会出现 */
+        .hint-text.visible {
             animation: breathe 4s ease-in-out infinite;
         }
 
-        @keyframes breathe {
-            0%, 100% { opacity: 0.75; }
-            50% { opacity: 0.95; }
-        }
+        @keyframes breathe { 0%, 100% { opacity: 0.75; } 50% { opacity: 0.95; } }
 
         .feedback-text {
-            position: fixed;
-            top: 50%;
-            left: 50%;
+            position: fixed; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 18px;
-            letter-spacing: 2px;
-            color: #5FA894;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 20;
+            font-size: 18px; letter-spacing: 2px; color: #5FA894;
+            opacity: 0; pointer-events: none; z-index: 20;
             animation: feedbackFloat 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-            max-width: 80%;
-            text-align: center;
-            word-wrap: break-word;
-            white-space: pre-line;
-            line-height: 2;
-            padding: 20px;
-            font-weight: 300;
+            max-width: 80%; text-align: center; word-wrap: break-word;
+            white-space: pre-line; line-height: 2; padding: 20px; font-weight: 300;
         }
-
         .feedback-text.special {
-            font-size: 20px;
-            color: #D4A76A;
-            font-weight: 400;
+            font-size: 20px; color: #D4A76A; font-weight: 400;
             text-shadow: 0 2px 10px rgba(255, 230, 200, 0.6);
             animation: feedbackFloatSpecial 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
-
         @keyframes feedbackFloat {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, -45%);
-            }
-            15% {
-                opacity: 1;
-            }
-            85% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -60%);
-            }
+            0% { opacity: 0; transform: translate(-50%, -45%); }
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -60%); }
         }
-
         @keyframes feedbackFloatSpecial {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, -45%) scale(0.95);
-            }
-            10% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            90% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -55%) scale(1.05);
-            }
+            0% { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+            10% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            90% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -55%) scale(1.05); }
         }
 
         .flower-counter {
-            position: absolute;
-            bottom: 40px;
-            right: 20px;
-            font-size: 14px;
-            color: #8FAFA0;
-            letter-spacing: 1px;
-            opacity: 0;
-            transition: opacity 0.4s;
-            pointer-events: none;
+            position: absolute; bottom: 40px; right: 20px;
+            font-size: 14px; color: #8FAFA0; letter-spacing: 1px;
+            opacity: 0; transition: opacity 0.4s; pointer-events: none;
         }
-
-        .flower-counter.show {
-            opacity: 1;
-        }
+        .flower-counter.show { opacity: 1; }
 
         .btn {
             background: linear-gradient(135deg, #A8E6CF, #DCEDC1);
-            color: #4A6B5D; border: none;
-            padding: 14px 36px;
-            font-family: var(--font-stack);
-            font-size: 15px; letter-spacing: 2px; font-weight: 300;
-            cursor: pointer; border-radius: 50px;
+            color: #4A6B5D; border: none; padding: 14px 36px;
+            font-family: var(--font-stack); font-size: 15px; letter-spacing: 2px;
+            font-weight: 300; cursor: pointer; border-radius: 50px;
             opacity: 0; transform: translateY(20px);
             transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
             pointer-events: none;
@@ -267,94 +154,39 @@
         .btn:active { transform: scale(0.98) translateY(0); }
         .btn.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
+        /* 海报弹窗 */
         #poster-modal {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(248, 248, 246, 0.98);
-            z-index: 100;
-            display: none; flex-direction: column;
-            align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.5s;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(248, 248, 246, 0.98); z-index: 100;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.5s; padding: 20px;
         }
         #poster-modal.show { display: flex; opacity: 1; }
         #poster-img {
-            max-width: 90%;
-            max-height: 80vh; 
-            object-fit: contain;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.08);
-            border-radius: 12px;
-            margin-bottom: 20px;
+            max-width: 90%; max-height: 80vh; object-fit: contain;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.08); border-radius: 12px; margin-bottom: 20px;
         }
-
-        .poster-info {
-            text-align: center;
-            max-width: 500px;
-        }
-
-        .poster-info p {
-            font-size: 13px;
-            color: #AAA;
-            letter-spacing: 1px;
-            margin: 10px 0;
-        }
-
+        .poster-info { text-align: center; max-width: 500px; }
+        .poster-info p { font-size: 13px; color: #AAA; letter-spacing: 1px; margin: 10px 0; }
         .close-btn {
-            margin-top: 20px;
-            font-size: 28px;
-            color: #CCC;
-            cursor: pointer;
-            padding: 10px;
-            transition: color 0.3s;
+            margin-top: 20px; font-size: 28px; color: #CCC;
+            cursor: pointer; padding: 10px; transition: color 0.3s;
         }
+        .close-btn:hover { color: #999; }
 
-        .close-btn:hover {
-            color: #999;
-        }
-
+        /* 音乐控制 */
         .music-control {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            background: rgba(168, 230, 207, 0.8);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 50;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(168, 230, 207, 0.3);
-            opacity: 0;
-            pointer-events: none;
+            position: fixed; top: 20px; right: 20px; width: 50px; height: 50px;
+            background: rgba(168, 230, 207, 0.8); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 50; transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(168, 230, 207, 0.3); opacity: 0; pointer-events: none;
         }
-
-        .music-control.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .music-control:hover {
-            background: rgba(168, 230, 207, 1);
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(168, 230, 207, 0.5);
-        }
-
-        .music-control svg {
-            width: 24px;
-            height: 24px;
-            fill: #4A6B5D;
-        }
-
-        .music-control.muted {
-            background: rgba(189, 189, 189, 0.8);
-        }
-
-        .music-control.muted:hover {
-            background: rgba(189, 189, 189, 1);
-        }
+        .music-control.visible { opacity: 1; pointer-events: auto; }
+        .music-control:hover { background: rgba(168, 230, 207, 1); transform: scale(1.1); box-shadow: 0 6px 20px rgba(168, 230, 207, 0.5); }
+        .music-control svg { width: 24px; height: 24px; fill: #4A6B5D; }
+        .music-control.muted { background: rgba(189, 189, 189, 0.8); }
+        .music-control.muted:hover { background: rgba(189, 189, 189, 1); }
     </style>
 </head>
 <body>
@@ -385,50 +217,32 @@
 
 <div id="choice-modal">
     <div class="choice-content">
-        <div class="choice-title">
-            2026，你想和谁一起重新开始？
-        </div>
-        <div class="choice-subtitle">
-            (可以选择多个)
-        </div>
+        <div class="choice-title">2026，你想和谁一起重新开始？</div>
+        <div class="choice-subtitle">(可以选择多个)</div>
         <div class="choice-buttons" id="choiceButtons"></div>
         <button class="choice-confirm-btn" id="confirmBtn" disabled>
-            <svg class="btn-owl" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <!-- 身体 -->
+             <svg class="btn-owl" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <ellipse cx="50" cy="65" rx="28" ry="32" fill="#C9A877"/>
-                <!-- 头 -->
                 <circle cx="50" cy="38" r="26" fill="#C9A877"/>
-                <!-- 肚子 -->
                 <ellipse cx="50" cy="68" rx="18" ry="24" fill="#F0DCC8"/>
-                <!-- 左耳朵 -->
                 <ellipse cx="32" cy="18" rx="7" ry="12" fill="#C9A877"/>
                 <ellipse cx="32" cy="20" rx="4" ry="8" fill="#F0DCC8"/>
-                <!-- 右耳朵 -->
                 <ellipse cx="68" cy="18" rx="7" ry="12" fill="#C9A877"/>
                 <ellipse cx="68" cy="20" rx="4" ry="8" fill="#F0DCC8"/>
-                <!-- 左眼白 -->
                 <ellipse cx="40" cy="35" rx="10" ry="12" fill="white"/>
-                <!-- 右眼白 -->
                 <ellipse cx="60" cy="35" rx="10" ry="12" fill="white"/>
-                <!-- 左眼瞳孔 -->
                 <circle cx="40" cy="36" r="7" fill="#3D3D3D"/>
                 <circle cx="42" cy="33" r="3" fill="white"/>
-                <!-- 右眼瞳孔 -->
                 <circle cx="60" cy="36" r="7" fill="#3D3D3D"/>
                 <circle cx="62" cy="33" r="3" fill="white"/>
-                <!-- 嘴 -->
                 <path d="M 50 48 Q 48 52 46 51" stroke="#D4A878" stroke-width="2" fill="none" stroke-linecap="round"/>
                 <path d="M 50 48 Q 52 52 54 51" stroke="#D4A878" stroke-width="2" fill="none" stroke-linecap="round"/>
-                <!-- 鼻子 -->
                 <path d="M 50 44 L 48 46 L 50 47 L 52 46 Z" fill="#E8B88D"/>
-                <!-- 翅膀纹理 -->
                 <path d="M 25 50 Q 20 55 22 65" stroke="#A68B6F" stroke-width="2" fill="none" opacity="0.6"/>
                 <path d="M 25 58 Q 20 62 22 70" stroke="#A68B6F" stroke-width="2" fill="none" opacity="0.6"/>
                 <path d="M 75 50 Q 80 55 78 65" stroke="#A68B6F" stroke-width="2" fill="none" opacity="0.6"/>
                 <path d="M 75 58 Q 80 62 78 70" stroke="#A68B6F" stroke-width="2" fill="none" opacity="0.6"/>
-                <!-- 左脚 -->
                 <path d="M 43 95 L 42 100 M 43 95 L 43 100 M 43 95 L 44 100" stroke="#D4A878" stroke-width="2" stroke-linecap="round"/>
-                <!-- 右脚 -->
                 <path d="M 57 95 L 56 100 M 57 95 L 57 100 M 57 95 L 58 100" stroke="#D4A878" stroke-width="2" stroke-linecap="round"/>
             </svg>
             和归归一起疗愈
@@ -439,9 +253,9 @@
 <div id="poster-modal">
     <img id="poster-img" src="" alt="Poster">
     <div class="poster-info">
-        <p>你的花园独一无二</p>
+        <p style="margin-top: 15px; color: #5FA894; font-weight: bold;">你的花园独一无二</p>
         <p id="poster-time"></p>
-        <p style="margin-top: 15px; color: #5FA894; font-weight: bold;">这是我的治愈时刻</p>
+        <p>长按保存到相册</p>
     </div>
     <div class="close-btn" onclick="closeModal()">×</div>
 </div>
@@ -454,347 +268,111 @@ const CONFIG = {
         flowerWhite: '#FFFAF0', flowerCenterYellow: '#F0D89F',
         flowerPink: '#E8C5D8', flowerCenterPink: '#D997BD',
         leafGreen: '#A8E6CF', leafDark: '#7CC9A8',
-        lavenderPurple: '#D5CDD8',
-        lavenderDark: '#B5ADB8',
-        tulipPink: '#D8A8C8',
-        tulipGreen: '#8DB88D',
-        pansyPurple: '#C8BDD5',
-        pansyYellow: '#E8D8A8',
-        sunflowerYellow: '#F5D891',
-        sunflowerBrown: '#D4A76A',
-        lilyWhite: '#F8F5F0',
-        lilyYellow: '#F0E8A8',
-        roseRed: '#E8B8C5',
-        rosePink: '#F0C8D8',
-        forgetMeNotBlue: '#B8D8E8',
-        forgetMeNotCenter: '#F0E8A8',
-        jasmineWhite: '#F8F8F0',
-        jasmineYellow: '#F5F0C8',
-        lilyOfValleyWhite: '#F5F8F5',
-        lilyOfValleyGreen: '#C8E8C8'
+        lavenderPurple: '#D5CDD8', lavenderDark: '#B5ADB8',
+        tulipPink: '#D8A8C8', tulipGreen: '#8DB88D',
+        pansyPurple: '#C8BDD5', pansyYellow: '#E8D8A8',
+        sunflowerYellow: '#F5D891', sunflowerBrown: '#D4A76A',
+        lilyWhite: '#F8F5F0', lilyYellow: '#F0E8A8',
+        roseRed: '#E8B8C5', rosePink: '#F0C8D8',
+        forgetMeNotBlue: '#B8D8E8', forgetMeNotCenter: '#F0E8A8',
+        jasmineWhite: '#F8F8F0', jasmineYellow: '#F5F0C8',
+        lilyOfValleyWhite: '#F5F8F5', lilyOfValleyGreen: '#C8E8C8'
     },
-    physics: { friction: 0.90, stopThreshold: 0.05 }
+    physics: { friction: 0.90, stopThreshold: 0.05 },
+    draw: { minDistance: 35 } // 最小绘制间距
 };
 
 const CHOICES = [
-    '和自己重新开始',
-    '和失去的友情重新开始',
-    '和那个人重新开始',
-    '和未实现的梦想重新开始',
-    '和对自己的期待重新开始',
-    '和过去的遗憾重新开始'
+    '和自己重新开始', '和失去的友情重新开始', '和那个人重新开始',
+    '和未实现的梦想重新开始', '和对自己的期待重新开始', '和过去的遗憾重新开始'
 ];
 
-// 简化词库：每个主题50条（10-15字），支持不重复循环
 const MESSAGES_MAP = {
-    '和自己重新开始': [
-        '允许自己不完美，这就是最好的成长',
-        '你值得被温柔对待，首先对自己',
-        '破碎的你依然闪闪发光',
-        '每一次放过自己都是深深的自爱',
-        '慢慢来别急，你已经足够好',
-        '对自己说一声对不起，也谢谢你',
-        '你的缺点也是独特的样子',
-        '学会爱自己是你这一生最重要功课',
-        '有些时候放下就是最好的前进',
-        '原谅自己吧，就像原谅最亲近的人',
-        '你正在慢慢变强，比昨天更勇敢',
-        '停下来休息也没关系，这就是自爱',
-        '接纳不完美的自己是一种力量',
-        '你的故事还没有完结，最好还在',
-        '曾经的伤已经成为你的智慧',
-        '做真实的自己就足够了',
-        '我看到你在努力，这真的就够了',
-        '有些改变是悄悄发生的',
-        '你的每一步都在慢慢治愈自己',
-        '和自己和平相处是最大的胜利',
-        '你值得被爱，即使那个人是你',
-        '曾让你哭泣的事会让你笑着讲述',
-        '你正在学会善待自己',
-        '有时候你需要的就是一句很棒了',
-        '破碎教了你如何温柔地拼合',
-        '你的灵魂比任何伤口都坚强',
-        '允许自己成为一个在愈合中的人',
-        '你已经在慢慢变成更好的样子',
-        '休息不是放弃而是为了走得更远',
-        '你不用成为任何人做自己就足够'
-    ],
-    '和失去的友情重新开始': [
-        '有人会因为你的真诚而回到你身边',
-        '失去教会了你什么才是真正珍贵',
-        '也许下一个朋友会更懂你',
-        '陪伴不一定永远但曾经都是真的',
-        '友谊的裂缝里也能长出宽恕',
-        '你有能力去爱就有能力去原谅',
-        '受伤后的你会更温柔地对待他人',
-        '一个人走也没关系但你永不孤单',
-        '失去不是终点而是另一段开始',
-        '你的真心值得被看见',
-        '那些共同回忆永远闪闪发光',
-        '有时让彼此自由也是一种爱',
-        '你已经足够好不用改变去留住',
-        '朋友来往但你的价值永不改变',
-        '有些人离开是为了更好的人出现',
-        '你的陪伴对某个人来说是救赎',
-        '失去教会了你如何更深地去爱',
-        '即使只有你也可以自己陪伴自己',
-        '有些友谊是一生有些是一个季节',
-        '你值得拥有没有条件的友情',
-        '哭过的夜晚都让你变得更强',
-        '有些人虽不在但他们在你心里',
-        '你的真心不会被浪费',
-        '失去的同时你也在获得',
-        '有些友谊形式改变本质永不变',
-        '你已经学会了如何去爱',
-        '曾经的陪伴永远是你的力量',
-        '有人正在某个角落想念你',
-        '你的温柔值得被珍惜',
-        '失去让你明白什么是真朋友'
-    ],
-    '和那个人重新开始': [
-        '这是为了和解与重生而开的花',
-        '原谅是给自己最好的礼物',
-        '你值得被爱即使这一次不是他',
-        '有人看不懂你的价值不是你的错',
-        '下一段故事会有人珍惜你的全部',
-        '爱过就足够了别再为此苛责自己',
-        '放手也是一种深深的爱',
-        '你的温柔会在别处被看见',
-        '有些人注定只是生命中的过客',
-        '你的爱不是浪费它改变了你',
-        '离开不因你不够好是因你值得更好',
-        '那些眼泪都滋养了你的灵魂',
-        '有时失去某个人才能找到自己',
-        '你的真心值得被一个真的珍惜',
-        '和解可以从放手开始',
-        '他看不见你的好是他的遗憾',
-        '有些爱注定是一个人的功课',
-        '你已足够努力是时候为自己活',
-        '爱情不是救赎是两个人的选择',
-        '你值得被选择而不是被迫等待',
-        '对他的思念会慢慢变成对自己的爱',
-        '有人不懂你的执着但不代表有错',
-        '放手的人往往最勇敢',
-        '你的爱值得被等价地回应',
-        '有时最好的爱就是放开',
-        '没有回音的呼唤教会你独立',
-        '你不用改变自己去符合谁的期待',
-        '有些人只是途中的邂逅不是终点',
-        '你的热情早晚会遇见回应',
-        '离开的痛是成长的代价'
-    ],
-    '和未实现的梦想重新开始': [
-        '梦想的路很长你还有太多的时间',
-        '改变方向才是真正的智慧',
-        '你已经比昨天更接近梦想了',
-        '每一次尝试都在塑造更好的你',
-        '梦想会等你可能以不同的形式',
-        '失败的经历是梦想必须的铺垫',
-        '允许自己调整方向这叫做成长',
-        '这一刻的放下是为了更好的出发',
-        '有些梦想需要时间但你有的是时间',
-        '没有走弯路的人从不会到达远方',
-        '你的梦想在等你更成熟的自己',
-        '失败只是梦想的另一种开始',
-        '不顺利的日子都在教你什么坚持',
-        '梦想不会嘲笑失败只拥抱成长',
-        '有时最好的计划是允许改变',
-        '你已经在追梦的路上了很胜利',
-        '那些挫折都是梦想留给你的礼物',
-        '坚持是一种能力你正在学会',
-        '有些梦想注定要走曲折的路',
-        '你没有失败你只是在找方向',
-        '梦想的火焰在你心里永不熄灭',
-        '有时等待也是一种努力',
-        '你值得拥有那个梦想的自己',
-        '没有白走的路每一步都靠近',
-        '失败教会你何为真正的梦想',
-        '有些成功需要先经历几次失败',
-        '你的梦想正在你的每个选择中',
-        '坚持不是固执而是信念',
-        '那些曾看不清的路现在变清晰',
-        '有人放弃但你在坚持这是区别'
-    ],
-    '和对自己的期待重新开始': [
-        '你不需要完美只需要真实',
-        '这是一朵放过自己的花',
-        '期待太高也是一种对自己的伤害',
-        '你已经做得很好了请相信自己',
-        '成为最好的自己不是别人眼里自己',
-        '进步不是一条直线允许自己迂回',
-        '有些期待需要放下才能真正快乐',
-        '你的价值不由期待来定义',
-        '这朵花为了接纳不完美的自己',
-        '完美只存在期待中不存在生活里',
-        '你已经够好了不用再追求更好',
-        '有些期待是别人的梦不是你的',
-        '放下执念就是放过自己',
-        '你的每一个缺点都是独特',
-        '期待越多失望就越大',
-        '有时接纳自己就是最大的成就',
-        '你不用成为任何人的标杆',
-        '那些未达成的期待教你放下',
-        '真实的你比完美的幻想更值爱',
-        '有时停止比较就是自我救赎',
-        '你正在学会与自己和平相处',
-        '期待的缝隙里装着太多遗憾',
-        '你已足够努力是时候看闪光',
-        '不用事事尽力有时平凡就好',
-        '你的样子刚刚好',
-        '期待会给你压力但你值自在',
-        '有时失败反而让你看清自己',
-        '你已在慢慢放下那些不必要',
-        '接纳自己是最温柔的自爱',
-        '有时不及格的人生也很精彩'
-    ],
-    '和过去的遗憾重新开始': [
-        '遗憾是人生的一部分也是力量来源',
-        '这是一朵与过去和解的花',
-        '过去已经过去你还有整个未来',
-        '遗憾教会你什么才是真正的珍惜',
-        '那些错误让你成为了现在的自己',
-        '原谅过去的自己才能拥抱未来',
-        '每一个遗憾都是成长的证明',
-        '你不能改变过去但能改变看法',
-        '这朵花盛开在遗憾的养分里',
-        '有些事没做成就了另一些可能',
-        '遗憾不是失败是选择的代价',
-        '你已经用行动弥补了曾经遗憾',
-        '过去的自己已经尽力了',
-        '那些没说的话现在可以对自己说',
-        '有时遗憾才是人生最好的老师',
-        '你无法重来但可以重新开始',
-        '那些曾经的错误都让你更智慧',
-        '遗憾让你懂得了什么叫珍惜',
-        '你已经在慢慢原谅过去的自己',
-        '有些事没做恰好是最好的安排',
-        '过去无法改写但你可改写未来',
-        '那些遗憾其实都有了答案',
-        '你值得原谅自己曾经的无知',
-        '遗憾的背后往往是更好的结果',
-        '有时错过才能让你遇见对的',
-        '你已为过去的选择付出代价',
-        '那些不完美的过去塑造现在',
-        '有些遗憾只有时间才能治愈',
-        '你正在学会与遗憾共处',
-        '这朵花见证了你与过去的和解'
-    ]
+    '和自己重新开始': ['允许自己不完美', '你值得被温柔对待', '破碎的你依然闪光', '放过自己是深深自爱', '慢慢来，你已足够好', '对自己说声谢谢', '缺点也是独特', '学会爱自己', '放下是最好的前进', '原谅自己吧'],
+    '和失去的友情重新开始': ['真诚会带回对的人', '失去教会你珍惜', '下一个朋友更懂你', '曾经的陪伴是真的', '裂缝里长出宽恕', '你有能力去原谅', '你会更温柔待人', '你永不孤单', '失去是另一段开始', '你的真心值得'],
+    '和那个人重新开始': ['为了重生而开的花', '原谅是给自己的礼物', '你值得被爱', '没人能定义你的价值', '会有珍惜你的人', '爱过就足够了', '放手也是一种爱', '温柔会在别处被看见', '有些人只是过客', '爱改变了你'],
+    '和未实现的梦想重新开始': ['梦想的路还很长', '改变方向是智慧', '你比昨天更接近了', '尝试塑造更好的你', '梦想会等你', '失败是必须的铺垫', '允许自己调整方向', '放下是为了出发', '你有的是时间', '弯路也是路'],
+    '和对自己的期待重新开始': ['不需要完美只求真实', '放过自己的花', '期待太高是伤害', '你已经做得很好了', '做最好的自己', '进步不是直线', '放下期待才快乐', '价值不由期待定义', '接纳不完美', '完美只在幻想中'],
+    '和过去的遗憾重新开始': ['遗憾也是力量来源', '与过去和解', '过去已去未来将来', '遗憾教会你珍惜', '错误成就现在的你', '原谅过去拥抱未来', '遗憾是成长证明', '改变对过去的看法', '遗憾养分里开出花', '没做成也是一种可能']
 };
 
-// 为每个选择维护已显示词库的索引
 let displayedIndices = {};
-
-// 跟踪已经出现过的花朵类型
 let appearedFlowerTypes = new Set();
-
-// 花朵名称和象征意义
 const FLOWER_MEANINGS = [
-    { name: '雏菊', meaning: '纯真与希望' },
-    { name: '樱花', meaning: '珍惜当下' },
-    { name: '三叶草', meaning: '幸运与祝福' },
-    { name: '薰衣草', meaning: '宁静与治愈' },
-    { name: '郁金香', meaning: '美好与祝福' },
-    { name: '三色堇', meaning: '思念与回忆' },
-    { name: '向日葵', meaning: '阳光与勇气' },
-    { name: '百合', meaning: '纯洁与重生' },
-    { name: '玫瑰', meaning: '爱与坚强' },
-    { name: '勿忘我', meaning: '永恒的记忆' },
-    { name: '茉莉花', meaning: '温柔与纯真' },
-    { name: '铃兰', meaning: '幸福归来' }
+    { name: '雏菊', meaning: '纯真与希望' }, { name: '樱花', meaning: '珍惜当下' },
+    { name: '三叶草', meaning: '幸运与祝福' }, { name: '薰衣草', meaning: '宁静与治愈' },
+    { name: '郁金香', meaning: '美好与祝福' }, { name: '三色堇', meaning: '思念与回忆' },
+    { name: '向日葵', meaning: '阳光与勇气' }, { name: '百合', meaning: '纯洁与重生' },
+    { name: '玫瑰', meaning: '爱与坚强' }, { name: '勿忘我', meaning: '永恒的记忆' },
+    { name: '茉莉花', meaning: '温柔与纯真' }, { name: '铃兰', meaning: '幸福归来' }
 ];
 
 function initDisplayedIndices() {
-    CHOICES.forEach(choice => {
-        displayedIndices[choice] = new Set();
-    });
+    CHOICES.forEach(choice => { displayedIndices[choice] = new Set(); });
 }
 
 function getRandomMessage() {
     if(selectedChoices.length === 0) return '🌸';
     const choice = selectedChoices[Math.floor(Math.random() * selectedChoices.length)];
     const messages = MESSAGES_MAP[choice] || [];
-
     if(messages.length === 0) return '这朵花为你而开';
-
-    // 获取还未显示过的索引
-    const displayed = displayedIndices[choice];
-    const availableIndices = [];
-    for(let i = 0; i < messages.length; i++) {
-        if(!displayed.has(i)) {
-            availableIndices.push(i);
-        }
-    }
-
-    // 如果所有词都显示过了，重置
-    if(availableIndices.length === 0) {
-        displayed.clear();
-        for(let i = 0; i < messages.length; i++) {
-            availableIndices.push(i);
-        }
-    }
-
-    // 随机选择一条未显示的词
-    const randomIdx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    displayed.add(randomIdx);
-
-    return messages[randomIdx];
+    
+    // 简单随机，不再强制去重，保持轻量
+    return messages[Math.floor(Math.random() * messages.length)];
 }
 
-function getSpecialMessage(flowerType) {
-    const flower = FLOWER_MEANINGS[flowerType];
-    const templates = [
-        `✨ 一朵${flower.name}为你绽放，带来${flower.meaning}`,
-        `✨ ${flower.name}悄悄开了，愿你拥有${flower.meaning}`,
-        `✨ 看，${flower.name}在对你微笑，它代表${flower.meaning}`,
-        `✨ 这朵${flower.name}送给你，愿${flower.meaning}常伴左右`,
-        `✨ ${flower.name}盛开了，带着${flower.meaning}的祝福`,
-        `✨ 遇见一朵${flower.name}，遇见${flower.meaning}`,
-        `✨ ${flower.name}为你而开，寓意${flower.meaning}`,
-        `✨ 这是${flower.name}，轻轻诉说着${flower.meaning}`,
-        `✨ 一朵特别的${flower.name}，承载${flower.meaning}的心意`,
-        `✨ ${flower.name}在此刻绽放，象征${flower.meaning}`,
-        `✨ 愿这朵${flower.name}将${flower.meaning}带给你`,
-        `✨ ${flower.name}温柔地开着，寄予${flower.meaning}的期许`
-    ];
-    return templates[Math.floor(Math.random() * templates.length)];
-}
-
-const FEEDBACKS = {
-    break: '感受到你了',
-    flower1: '第一朵希望',
-    flower3: '生命在苏醒',
-    flower5: '你做很棒'
-};
-
+const FEEDBACKS = { break: '感受到你了', flower1: '第一朵希望', flower3: '生命在苏醒', flower5: '你做很棒' };
 const STATE = { CHOICE: -1, IDLE: 0, BROKEN: 1, GARDENING: 2 };
+
 let currentState = STATE.CHOICE;
 let selectedChoices = [];
 let width, height, centerX, centerY;
-let shards = [];
-let flowers = [];
+let shards = [], flowers = [], particles = [];
 let dpr = window.devicePixelRatio || 2;
 const canvas = document.getElementById('mainCanvas');
 const ctx = canvas.getContext('2d');
 const hintText = document.getElementById('topHint');
 const counterEl = document.getElementById('flowerCounter');
 
+// 绘制相关变量
+let isDrawing = false;
+let lastDrawPos = { x: 0, y: 0 };
+
+class Particle {
+    constructor(x, y) {
+        this.x = x; this.y = y;
+        this.vx = (Math.random() - 0.5) * 1.5;
+        this.vy = (Math.random() - 0.5) * 1.5 - 0.5; // 稍微向上飘
+        this.life = 1.0;
+        this.decay = 0.02 + Math.random() * 0.02;
+        this.size = 1 + Math.random() * 2;
+        this.color = Math.random() > 0.5 ? '255, 230, 200' : '168, 230, 207'; // 金色或淡绿色
+    }
+    update() {
+        this.x += this.vx; this.y += this.vy;
+        this.life -= this.decay;
+    }
+    draw(ctx) {
+        ctx.fillStyle = `rgba(${this.color}, ${this.life})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
 class Shard {
     constructor(c, as, ae, e1, e2, r) {
         this.centerOrigin={...c}; this.r=r; this.x=c.x; this.y=c.y;
         this.rot=0; this.vx=0; this.vy=0; this.vr=0;
         this.as=as; this.ae=ae; this.e1=e1; this.e2=e2;
-        this.breatheOffset = Math.random() * Math.PI * 2; // 呼吸相位偏移
+        this.breatheOffset = Math.random() * Math.PI * 2;
     }
-    
     explode() { 
         const m=(this.as+this.ae)/2; 
         const baseForce = Math.min(width, height) * 0.015; 
         const f = baseForce * (0.8 + Math.random() * 0.4); 
-        this.vx=Math.cos(m)*f; 
-        this.vy=Math.sin(m)*f; 
-        this.vr=(Math.random()-0.5)*0.05;
+        this.vx=Math.cos(m)*f; this.vy=Math.sin(m)*f; this.vr=(Math.random()-0.5)*0.05;
     }
-    
     update() { 
         if(currentState===STATE.BROKEN){ 
             this.x+=this.vx; this.y+=this.vy; this.rot+=this.vr; 
@@ -803,19 +381,12 @@ class Shard {
         } 
         return true; 
     }
-
     draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rot);
-
-        // 微妙的呼吸效果：0.98 - 1.02 之间的缩放
+        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
         const breatheScale = 1 + Math.sin(Date.now() / 3000 + this.breatheOffset) * 0.02;
         ctx.scale(breatheScale, breatheScale);
-
         ctx.beginPath();
-        const r = this.r;
-        const c = 15;
+        const r = this.r, c = 15;
         const dl = (a, n, rev) => {
             for(let i = (rev ? c : 0); rev ? i >= 0 : i <= c; rev ? i-- : i++) {
                 const d = (i / c) * r;
@@ -823,19 +394,12 @@ class Shard {
                 ctx.lineTo(Math.cos(a) * d + Math.cos(a + Math.PI / 2) * off, Math.sin(a) * d + Math.sin(a + Math.PI / 2) * off);
             }
         };
-        dl(this.as, this.e1, false);
-        ctx.arc(0, 0, r, this.as, this.ae);
-        dl(this.ae, this.e2, true);
+        dl(this.as, this.e1, false); ctx.arc(0, 0, r, this.as, this.ae); dl(this.ae, this.e2, true);
         ctx.closePath();
         const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-        g.addColorStop(0, '#FFF');
-        g.addColorStop(1, CONFIG.colors.plateDark);
-        ctx.fillStyle = g;
-        ctx.shadowColor = 'rgba(0,0,0,0.06)';
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetY = 8;
-        ctx.fill();
-        ctx.restore();
+        g.addColorStop(0, '#FFF'); g.addColorStop(1, CONFIG.colors.plateDark);
+        ctx.fillStyle = g; ctx.shadowColor = 'rgba(0,0,0,0.06)';
+        ctx.shadowBlur = 15; ctx.shadowOffsetY = 8; ctx.fill(); ctx.restore();
     }
 }
 
@@ -843,295 +407,53 @@ class Flower {
     constructor(x,y) {
         this.x=x; this.y=y; this.s=0; this.ts=0.4+Math.random()*0.5;
         this.rot=Math.random()*Math.PI*2;
-        this.t=Math.floor(Math.random()*12); // 12种花朵
+        this.t=Math.floor(Math.random()*12);
         this.wo=Math.random()*100;
-
-        // 变比强化：约10%概率出现特殊花朵
         this.isSpecial = Math.random() < 0.10;
-
         if(this.isSpecial) {
-            // 特殊花朵：更大、更灿烂但低调
-            this.size = 1.6 + Math.random() * 0.4; // 1.6-2倍大小
-            this.glow = true;
-            this.glowPhase = 0;
-            this.glowIntensity = 0.4; // 柔和的光晕
+            this.size = 1.6 + Math.random() * 0.4; this.glow = true; this.glowPhase = 0; this.glowIntensity = 0.4;
         } else {
-            this.glow = Math.random() < 0.15;
-            this.glowPhase = 0;
-            this.size = 0.8 + Math.random() * 0.6;
-            this.glowIntensity = 0.3;
+            this.glow = Math.random() < 0.15; this.glowPhase = 0; this.size = 0.8 + Math.random() * 0.6; this.glowIntensity = 0.3;
         }
     }
-
     update() {
         this.s+=(this.ts-this.s)*0.15;
         if(this.glow) this.glowPhase = (this.glowPhase + 0.05) % (Math.PI * 2);
     }
-
     draw(ctx) {
         ctx.save(); ctx.translate(this.x,this.y);
         const w=Math.sin(Date.now()/500+this.wo)*0.05; ctx.rotate(this.rot+w);
         ctx.scale(this.s * this.size, this.s * this.size);
-
         if(this.glow) {
             const glowOpacity = Math.sin(this.glowPhase) * this.glowIntensity + this.glowIntensity;
-            if(this.isSpecial) {
-                // 特殊花朵：温暖的金粉色光晕，低调治愈
-                ctx.shadowColor = `rgba(255, 230, 200, ${glowOpacity})`;
-                ctx.shadowBlur = 35;
-            } else {
-                ctx.shadowColor = `rgba(255, 215, 0, ${glowOpacity})`;
-                ctx.shadowBlur = 20;
-            }
+            ctx.shadowColor = this.isSpecial ? `rgba(255, 230, 200, ${glowOpacity})` : `rgba(255, 215, 0, ${glowOpacity})`;
+            ctx.shadowBlur = this.isSpecial ? 35 : 20;
         }
-
-        if(this.t===0)this.dDaisy(ctx);
-        else if(this.t===1)this.dSakura(ctx);
-        else if(this.t===2)this.dClover(ctx);
-        else if(this.t===3)this.dLavender(ctx);
-        else if(this.t===4)this.dTulip(ctx);
-        else if(this.t===5)this.dPansy(ctx);
-        else if(this.t===6)this.dSunflower(ctx);
-        else if(this.t===7)this.dLily(ctx);
-        else if(this.t===8)this.dRose(ctx);
-        else if(this.t===9)this.dForgetMeNot(ctx);
-        else if(this.t===10)this.dJasmine(ctx);
-        else this.dLilyOfValley(ctx);
+        if(this.t===0)this.dDaisy(ctx); else if(this.t===1)this.dSakura(ctx); else if(this.t===2)this.dClover(ctx);
+        else if(this.t===3)this.dLavender(ctx); else if(this.t===4)this.dTulip(ctx); else if(this.t===5)this.dPansy(ctx);
+        else if(this.t===6)this.dSunflower(ctx); else if(this.t===7)this.dLily(ctx); else if(this.t===8)this.dRose(ctx);
+        else if(this.t===9)this.dForgetMeNot(ctx); else if(this.t===10)this.dJasmine(ctx); else this.dLilyOfValley(ctx);
         ctx.restore(); 
     }
-
-    dDaisy(ctx) { 
-        ctx.fillStyle=CONFIG.colors.flowerWhite; 
-        for(let i=0;i<8;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/8);
-            ctx.ellipse(15,0,10,5,0,0,Math.PI*2);
-            ctx.fill();
-        } 
-        ctx.beginPath();
-        ctx.arc(0,0,8,0,Math.PI*2);
-        ctx.fillStyle=CONFIG.colors.flowerCenterYellow;
-        ctx.fill();
-        ctx.shadowColor='rgba(255, 215, 0, 0.2)';
-        ctx.shadowBlur=15;
-    }
-
-    dSakura(ctx) { 
-        ctx.fillStyle=CONFIG.colors.flowerPink; 
-        for(let i=0;i<5;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/5);
-            ctx.moveTo(0,0);
-            ctx.quadraticCurveTo(10,-10,20,0);
-            ctx.quadraticCurveTo(10,10,0,0);
-            ctx.fill();
-        } 
-        ctx.beginPath();
-        ctx.arc(0,0,5,0,Math.PI*2);
-        ctx.fillStyle=CONFIG.colors.flowerCenterPink;
-        ctx.fill();
-        ctx.shadowColor='rgba(255, 105, 180, 0.2)';
-        ctx.shadowBlur=15;
-    }
-
-    dClover(ctx) { 
-        ctx.fillStyle=CONFIG.colors.leafGreen; 
-        ctx.beginPath();
-        ctx.ellipse(-8,-5,12,6,Math.PI/4,0,Math.PI*2);
-        ctx.fill(); 
-        ctx.beginPath();
-        ctx.ellipse(8,-5,12,6,-Math.PI/4,0,Math.PI*2);
-        ctx.fill(); 
-        ctx.strokeStyle=CONFIG.colors.leafDark;
-        ctx.lineWidth=2;
-        ctx.lineCap='round';
-        ctx.beginPath();
-        ctx.moveTo(0,0);
-        ctx.quadraticCurveTo(0,10,-2,20);
-        ctx.stroke();
-        ctx.shadowColor='rgba(168, 230, 207, 0.2)';
-        ctx.shadowBlur=12;
-    }
-
-    dLavender(ctx) {
-        ctx.fillStyle=CONFIG.colors.lavenderPurple;
-        for(let i=0;i<4;i++){
-            for(let j=0;j<3;j++){
-                ctx.beginPath();
-                ctx.arc(-8+i*5, -5+j*5, 3, 0, Math.PI*2);
-                ctx.fill();
-            }
-        }
-        ctx.strokeStyle=CONFIG.colors.lavenderDark;
-        ctx.lineWidth=1.5;
-        ctx.beginPath();
-        ctx.moveTo(0,0);
-        ctx.quadraticCurveTo(-3,8,0,18);
-        ctx.stroke();
-    }
-
-    dTulip(ctx) {
-        ctx.fillStyle=CONFIG.colors.tulipPink;
-        for(let i=0;i<3;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/3);
-            ctx.moveTo(0,-15);
-            ctx.quadraticCurveTo(8,-5,5,5);
-            ctx.quadraticCurveTo(0,8,-5,5);
-            ctx.quadraticCurveTo(-8,-5,0,-15);
-            ctx.fill();
-        }
-        ctx.strokeStyle=CONFIG.colors.tulipGreen;
-        ctx.lineWidth=2;
-        ctx.beginPath();
-        ctx.moveTo(0,5);
-        ctx.lineTo(0,20);
-        ctx.stroke();
-    }
-
-    dPansy(ctx) {
-        ctx.fillStyle=CONFIG.colors.pansyPurple;
-        for(let i=0;i<5;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/5);
-            ctx.ellipse(0,-10,8,10,0,0,Math.PI*2);
-            ctx.fill();
-        }
-        ctx.beginPath();
-        ctx.arc(0,0,6,0,Math.PI*2);
-        ctx.fillStyle=CONFIG.colors.pansyYellow;
-        ctx.fill();
-        ctx.fillStyle='#8B8B8B';
-        ctx.beginPath();
-        ctx.arc(-2,-1,2,0,Math.PI*2);
-        ctx.fill();
-    }
-
-    dSunflower(ctx) {
-        // 花瓣
-        ctx.fillStyle=CONFIG.colors.sunflowerYellow;
-        for(let i=0;i<12;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/12);
-            ctx.ellipse(18,0,12,5,0,0,Math.PI*2);
-            ctx.fill();
-        }
-        // 花心
-        ctx.beginPath();
-        ctx.arc(0,0,10,0,Math.PI*2);
-        ctx.fillStyle=CONFIG.colors.sunflowerBrown;
-        ctx.fill();
-    }
-
-    dLily(ctx) {
-        // 三片花瓣
-        ctx.fillStyle=CONFIG.colors.lilyWhite;
-        for(let i=0;i<6;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/6);
-            ctx.moveTo(0,0);
-            ctx.quadraticCurveTo(5,-18,0,-22);
-            ctx.quadraticCurveTo(-5,-18,0,0);
-            ctx.fill();
-        }
-        // 花蕊
-        for(let i=0;i<6;i++){
-            ctx.fillStyle=CONFIG.colors.lilyYellow;
-            ctx.beginPath();
-            ctx.arc(Math.cos(i*Math.PI/3)*5, Math.sin(i*Math.PI/3)*5, 2, 0, Math.PI*2);
-            ctx.fill();
-        }
-    }
-
-    dRose(ctx) {
-        // 内层花瓣
-        ctx.fillStyle=CONFIG.colors.roseRed;
-        for(let i=0;i<3;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/3);
-            ctx.ellipse(0,-8,6,8,0,0,Math.PI*2);
-            ctx.fill();
-        }
-        // 外层花瓣
-        ctx.fillStyle=CONFIG.colors.rosePink;
-        for(let i=0;i<5;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/5);
-            ctx.ellipse(0,-15,8,10,0,0,Math.PI*2);
-            ctx.fill();
-        }
-    }
-
-    dForgetMeNot(ctx) {
-        // 5片小花瓣
-        ctx.fillStyle=CONFIG.colors.forgetMeNotBlue;
-        for(let i=0;i<5;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/5);
-            ctx.arc(8,0,6,0,Math.PI*2);
-            ctx.fill();
-        }
-        // 花心
-        ctx.beginPath();
-        ctx.arc(0,0,4,0,Math.PI*2);
-        ctx.fillStyle=CONFIG.colors.forgetMeNotCenter;
-        ctx.fill();
-    }
-
-    dJasmine(ctx) {
-        // 5片花瓣
-        ctx.fillStyle=CONFIG.colors.jasmineWhite;
-        for(let i=0;i<5;i++){
-            ctx.beginPath();
-            ctx.rotate(Math.PI*2/5);
-            ctx.moveTo(0,0);
-            ctx.lineTo(10,-5);
-            ctx.lineTo(12,0);
-            ctx.lineTo(10,5);
-            ctx.closePath();
-            ctx.fill();
-        }
-        // 花心
-        ctx.beginPath();
-        ctx.arc(0,0,3,0,Math.PI*2);
-        ctx.fillStyle=CONFIG.colors.jasmineYellow;
-        ctx.fill();
-    }
-
-    dLilyOfValley(ctx) {
-        // 铃铛形状的花朵
-        ctx.fillStyle=CONFIG.colors.lilyOfValleyWhite;
-        for(let i=0;i<3;i++){
-            ctx.save();
-            ctx.translate(-10+i*10, i*8);
-            ctx.beginPath();
-            ctx.moveTo(-5,-8);
-            ctx.quadraticCurveTo(-6,-2,-4,2);
-            ctx.quadraticCurveTo(0,4,4,2);
-            ctx.quadraticCurveTo(6,-2,5,-8);
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
-        }
-        // 茎
-        ctx.strokeStyle=CONFIG.colors.lilyOfValleyGreen;
-        ctx.lineWidth=2;
-        ctx.beginPath();
-        ctx.moveTo(0,0);
-        ctx.quadraticCurveTo(-5,10,0,24);
-        ctx.stroke();
-    }
+    dDaisy(ctx) { ctx.fillStyle=CONFIG.colors.flowerWhite; for(let i=0;i<8;i++){ctx.beginPath();ctx.rotate(Math.PI*2/8);ctx.ellipse(15,0,10,5,0,0,Math.PI*2);ctx.fill();} ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.fillStyle=CONFIG.colors.flowerCenterYellow;ctx.fill(); }
+    dSakura(ctx) { ctx.fillStyle=CONFIG.colors.flowerPink; for(let i=0;i<5;i++){ctx.beginPath();ctx.rotate(Math.PI*2/5);ctx.moveTo(0,0);ctx.quadraticCurveTo(10,-10,20,0);ctx.quadraticCurveTo(10,10,0,0);ctx.fill();} ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fillStyle=CONFIG.colors.flowerCenterPink;ctx.fill(); }
+    dClover(ctx) { ctx.fillStyle=CONFIG.colors.leafGreen; ctx.beginPath();ctx.ellipse(-8,-5,12,6,Math.PI/4,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.ellipse(8,-5,12,6,-Math.PI/4,0,Math.PI*2);ctx.fill(); ctx.strokeStyle=CONFIG.colors.leafDark;ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(0,10,-2,20);ctx.stroke(); }
+    dLavender(ctx) { ctx.fillStyle=CONFIG.colors.lavenderPurple; for(let i=0;i<4;i++){for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(-8+i*5, -5+j*5, 3, 0, Math.PI*2);ctx.fill();}} ctx.strokeStyle=CONFIG.colors.lavenderDark;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(-3,8,0,18);ctx.stroke(); }
+    dTulip(ctx) { ctx.fillStyle=CONFIG.colors.tulipPink; for(let i=0;i<3;i++){ctx.beginPath();ctx.rotate(Math.PI*2/3);ctx.moveTo(0,-15);ctx.quadraticCurveTo(8,-5,5,5);ctx.quadraticCurveTo(0,8,-5,5);ctx.quadraticCurveTo(-8,-5,0,-15);ctx.fill();} ctx.strokeStyle=CONFIG.colors.tulipGreen;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,5);ctx.lineTo(0,20);ctx.stroke(); }
+    dPansy(ctx) { ctx.fillStyle=CONFIG.colors.pansyPurple; for(let i=0;i<5;i++){ctx.beginPath();ctx.rotate(Math.PI*2/5);ctx.ellipse(0,-10,8,10,0,0,Math.PI*2);ctx.fill();} ctx.beginPath();ctx.arc(0,0,6,0,Math.PI*2);ctx.fillStyle=CONFIG.colors.pansyYellow;ctx.fill(); ctx.fillStyle='#8B8B8B';ctx.beginPath();ctx.arc(-2,-1,2,0,Math.PI*2);ctx.fill(); }
+    dSunflower(ctx) { ctx.fillStyle=CONFIG.colors.sunflowerYellow; for(let i=0;i<12;i++){ctx.beginPath();ctx.rotate(Math.PI*2/12);ctx.ellipse(18,0,12,5,0,0,Math.PI*2);ctx.fill();} ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fillStyle=CONFIG.colors.sunflowerBrown;ctx.fill(); }
+    dLily(ctx) { ctx.fillStyle=CONFIG.colors.lilyWhite; for(let i=0;i<6;i++){ctx.beginPath();ctx.rotate(Math.PI*2/6);ctx.moveTo(0,0);ctx.quadraticCurveTo(5,-18,0,-22);ctx.quadraticCurveTo(-5,-18,0,0);ctx.fill();} for(let i=0;i<6;i++){ctx.fillStyle=CONFIG.colors.lilyYellow;ctx.beginPath();ctx.arc(Math.cos(i*Math.PI/3)*5, Math.sin(i*Math.PI/3)*5, 2, 0, Math.PI*2);ctx.fill();} }
+    dRose(ctx) { ctx.fillStyle=CONFIG.colors.roseRed; for(let i=0;i<3;i++){ctx.beginPath();ctx.rotate(Math.PI*2/3);ctx.ellipse(0,-8,6,8,0,0,Math.PI*2);ctx.fill();} ctx.fillStyle=CONFIG.colors.rosePink; for(let i=0;i<5;i++){ctx.beginPath();ctx.rotate(Math.PI*2/5);ctx.ellipse(0,-15,8,10,0,0,Math.PI*2);ctx.fill();} }
+    dForgetMeNot(ctx) { ctx.fillStyle=CONFIG.colors.forgetMeNotBlue; for(let i=0;i<5;i++){ctx.beginPath();ctx.rotate(Math.PI*2/5);ctx.arc(8,0,6,0,Math.PI*2);ctx.fill();} ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fillStyle=CONFIG.colors.forgetMeNotCenter;ctx.fill(); }
+    dJasmine(ctx) { ctx.fillStyle=CONFIG.colors.jasmineWhite; for(let i=0;i<5;i++){ctx.beginPath();ctx.rotate(Math.PI*2/5);ctx.moveTo(0,0);ctx.lineTo(10,-5);ctx.lineTo(12,0);ctx.lineTo(10,5);ctx.closePath();ctx.fill();} ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fillStyle=CONFIG.colors.jasmineYellow;ctx.fill(); }
+    dLilyOfValley(ctx) { ctx.fillStyle=CONFIG.colors.lilyOfValleyWhite; for(let i=0;i<3;i++){ctx.save();ctx.translate(-10+i*10, i*8);ctx.beginPath();ctx.moveTo(-5,-8);ctx.quadraticCurveTo(-6,-2,-4,2);ctx.quadraticCurveTo(0,4,4,2);ctx.quadraticCurveTo(6,-2,5,-8);ctx.closePath();ctx.fill();ctx.restore();} ctx.strokeStyle=CONFIG.colors.lilyOfValleyGreen;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(-5,10,0,24);ctx.stroke(); }
 }
 
 function showFeedback(text, isSpecial = false) {
-    // 移除所有已存在的反馈文字，避免重叠
     document.querySelectorAll('.feedback-text').forEach(el => el.remove());
-
     const el = document.createElement('div');
     el.className = 'feedback-text';
-    if(isSpecial) {
-        el.classList.add('special');
-    }
+    if(isSpecial) el.classList.add('special');
     el.textContent = text;
     document.getElementById('uiLayer').appendChild(el);
     setTimeout(() => el.remove(), isSpecial ? 3000 : 2000);
@@ -1139,22 +461,17 @@ function showFeedback(text, isSpecial = false) {
 
 function updateCounter() {
     const count = flowers.length;
-    if(count > 0) {
-        counterEl.classList.add('show');
-        counterEl.textContent = `🌸 ×${count}`;
-    }
+    if(count > 0) { counterEl.classList.add('show'); counterEl.textContent = `🌸 ×${count}`; }
 }
 
 function initScene() {
-    shards=[]; flowers=[]; appearedFlowerTypes.clear(); const c=6; 
+    shards=[]; flowers=[]; particles=[]; appearedFlowerTypes.clear(); const c=6; 
     const isMobile = width < 600;
     const sizeRatio = isMobile ? 0.33 : 0.38;
     const r = Math.min(width, height) * sizeRatio; 
-
     let ang=[]; for(let i=0;i<c;i++)ang.push(Math.random()+0.2); 
     const sum=ang.reduce((a,b)=>a+b,0); 
-    let curA=0; 
-    let aPts=ang.map(a=>{curA+=(a/sum)*Math.PI*2;return curA;}); 
+    let curA=0; let aPts=ang.map(a=>{curA+=(a/sum)*Math.PI*2;return curA;}); 
     const ns=[]; for(let i=0;i<c;i++){let n=[];for(let k=0;k<15;k++)n.push(Math.random()-0.5);ns.push(n);}
     for(let i=0;i<c;i++){ 
         const s=(i==0)?aPts[c-1]-Math.PI*2:aPts[i-1]; 
@@ -1171,84 +488,119 @@ function resize() {
     if(currentState>=STATE.IDLE)initScene(); 
 }
 
-function handleGameClick(e) {
-    e.preventDefault();
-    if(currentState===STATE.IDLE){ 
-        currentState=STATE.BROKEN; 
-        hintText.innerHTML="试着触碰那些<br>破碎的地方..."; 
-        shards.forEach(s=>s.explode()); 
-        showFeedback(FEEDBACKS.break);
-        setTimeout(()=>{currentState=STATE.GARDENING;},800); 
-    } else if(currentState===STATE.GARDENING){
-        const pos={x:e.touches?e.touches[0].clientX:e.clientX,y:e.touches?e.touches[0].clientY:e.clientY};
-        const dist=Math.hypot(pos.x-centerX,pos.y-centerY);
-        if(dist<Math.min(width,height)*0.48){
-            const newFlower = new Flower(pos.x,pos.y);
-            flowers.push(newFlower);
-            updateCounter();
+function trySpawnFlower(x, y, isDrag = false) {
+    const dist = Math.hypot(x - lastDrawPos.x, y - lastDrawPos.y);
+    const inPlate = Math.hypot(x-centerX, y-centerY) < Math.min(width,height)*0.48;
 
-            const count = flowers.length;
-
-            // 渐进式反馈：前10朵100%反馈，之后仅特殊花朵反馈
-            if(newFlower.isSpecial) {
-                // 特殊花朵：始终显示治愈性文本
-                const healingText = getRandomMessage();
-                const flower = FLOWER_MEANINGS[newFlower.t];
-
-                // 检查这种花是否第一次出现
-                const isFirstTime = !appearedFlowerTypes.has(newFlower.t);
-                if(isFirstTime) {
-                    appearedFlowerTypes.add(newFlower.t);
-                    showFeedback(`✨ ${flower.name} ✨\n${healingText}`, true);
-                } else {
-                    // 不是第一次，只显示治愈文本
-                    showFeedback(healingText, true);
-                }
-            } else if(count <= 10) {
-                // 前10朵：100%反馈（不重复）
-                if(count === 1) {
-                    showFeedback(FEEDBACKS.flower1);
-                } else if(count === 3) {
-                    showFeedback(FEEDBACKS.flower3);
-                } else if(count === 5) {
-                    showFeedback(FEEDBACKS.flower5);
-                } else {
-                    showFeedback(getRandomMessage());
-                }
-            }
-            // count > 10 且非特殊花朵：不显示反馈（留白）
-
-            if(count===3){
-                hintText.style.opacity=0;
-                setTimeout(()=>{
-                    hintText.innerHTML="每一道伤痕<br>都能开出花来";
-                    hintText.style.opacity=1;
-                },500);
-            }
-            if(count>5) document.getElementById('generateBtn').classList.add('visible'); 
+    // 如果是点击(非拖拽)或者距离足够远，且在盘子范围内
+    if (inPlate && (!isDrag || dist > CONFIG.draw.minDistance)) {
+        const newFlower = new Flower(x, y);
+        flowers.push(newFlower);
+        updateCounter();
+        lastDrawPos = { x, y };
+        
+        // 产生光效
+        for(let k=0; k<3; k++) {
+            particles.push(new Particle(x, y));
         }
+
+        const count = flowers.length;
+
+        // 【优化】绘制第一朵花时，隐藏顶部的“轻轻触碰”引导语
+        if(count === 1) {
+            hintText.classList.remove('visible'); 
+        }
+        
+        // 反馈逻辑优化
+        if (newFlower.isSpecial) {
+             const flower = FLOWER_MEANINGS[newFlower.t];
+             if(!appearedFlowerTypes.has(newFlower.t)) {
+                 appearedFlowerTypes.add(newFlower.t);
+                 showFeedback(`✨ ${flower.name} ✨\n${flower.meaning}`, true);
+             } else {
+                 if(Math.random() < 0.2) showFeedback(getRandomMessage(), true);
+             }
+        } else if (count <= 10) {
+            if(!isDrag || Math.random() < 0.3) {
+                if (count === 1) showFeedback(FEEDBACKS.flower1);
+                else if (count === 3) showFeedback(FEEDBACKS.flower3);
+                else if (count === 5) showFeedback(FEEDBACKS.flower5);
+                else showFeedback(getRandomMessage());
+            }
+        }
+
+        // 【优化】绘制第三朵花时，显示新的引导语
+        if(count === 3){
+            setTimeout(()=>{ 
+                hintText.innerHTML="每一道伤痕<br>都能开出花来"; 
+                hintText.classList.add('visible'); 
+            }, 500);
+        }
+        if(count>5) document.getElementById('generateBtn').classList.add('visible'); 
+    }
+
+    if(isDrag && inPlate) {
+        if(Math.random() < 0.5) particles.push(new Particle(x, y));
     }
 }
+
+// 统一输入处理
+function handleInputStart(e) {
+    e.preventDefault();
+    if (currentState === STATE.IDLE) {
+        currentState = STATE.BROKEN;
+        hintText.innerHTML = "试着触碰那些<br>破碎的地方...";
+        shards.forEach(s => s.explode());
+        showFeedback(FEEDBACKS.break);
+        setTimeout(() => { 
+            currentState = STATE.GARDENING; 
+            hintText.innerHTML = "点落成花，指引春意<br>绘出你的花园"; 
+        }, 800);
+    } else if (currentState === STATE.GARDENING) {
+        isDrawing = true;
+        const x = e.touches ? e.touches[0].clientX : e.clientX;
+        const y = e.touches ? e.touches[0].clientY : e.clientY;
+        lastDrawPos = { x: -100, y: -100 }; // 保证第一次点击必生成
+        trySpawnFlower(x, y, false);
+    }
+}
+
+function handleInputMove(e) {
+    e.preventDefault();
+    if (currentState === STATE.GARDENING && isDrawing) {
+        const x = e.touches ? e.touches[0].clientX : e.clientX;
+        const y = e.touches ? e.touches[0].clientY : e.clientY;
+        trySpawnFlower(x, y, true);
+    }
+}
+
+function handleInputEnd(e) {
+    isDrawing = false;
+}
+
+// 事件绑定
+canvas.addEventListener('mousedown', handleInputStart);
+canvas.addEventListener('mousemove', handleInputMove);
+window.addEventListener('mouseup', handleInputEnd);
+
+canvas.addEventListener('touchstart', handleInputStart, { passive: false });
+canvas.addEventListener('touchmove', handleInputMove, { passive: false });
+window.addEventListener('touchend', handleInputEnd);
+
 
 function initChoiceModal() {
     const buttonsContainer = document.getElementById('choiceButtons');
     const confirmBtn = document.getElementById('confirmBtn');
-    
     initDisplayedIndices();
-    
     CHOICES.forEach(choice => {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.textContent = choice;
         btn.addEventListener('click', () => {
-            // 用户第一次交互时尝试播放音乐
             startMusic();
-
             btn.classList.toggle('selected');
             selectedChoices = [];
-            document.querySelectorAll('.choice-btn.selected').forEach(b => {
-                selectedChoices.push(b.textContent);
-            });
+            document.querySelectorAll('.choice-btn.selected').forEach(b => { selectedChoices.push(b.textContent); });
             confirmBtn.disabled = selectedChoices.length === 0;
         });
         buttonsContainer.appendChild(btn);
@@ -1256,46 +608,34 @@ function initChoiceModal() {
 
     confirmBtn.addEventListener('click', () => {
         if(selectedChoices.length > 0) {
-            // 确保音乐已开始播放
             startMusic();
-
             document.getElementById('choice-modal').classList.remove('show');
-            setTimeout(() => {
-                currentState = STATE.IDLE;
-                initScene();
-                canvas.addEventListener('mousedown', handleGameClick);
-                canvas.addEventListener('touchstart', handleGameClick, {passive:false});
+            setTimeout(() => { 
+                currentState = STATE.IDLE; 
+                initScene(); 
+                // 【修复】点击确认后，才给引导语加上visible类，让它出现
+                hintText.classList.add('visible'); 
             }, 600);
         }
     });
 }
 
-// 音乐控制功能
 document.getElementById('musicControl').addEventListener('click', () => {
     const bgMusic = document.getElementById('bgMusic');
     const musicControl = document.getElementById('musicControl');
     const musicIcon = document.getElementById('musicIcon');
     const mutedIcon = document.getElementById('mutedIcon');
-
     if(bgMusic.paused) {
-        bgMusic.play();
-        musicControl.classList.remove('muted');
-        musicIcon.style.display = 'block';
-        mutedIcon.style.display = 'none';
+        bgMusic.play(); musicControl.classList.remove('muted'); musicIcon.style.display = 'block'; mutedIcon.style.display = 'none';
     } else {
-        bgMusic.pause();
-        musicControl.classList.add('muted');
-        musicIcon.style.display = 'none';
-        mutedIcon.style.display = 'block';
+        bgMusic.pause(); musicControl.classList.add('muted'); musicIcon.style.display = 'none'; mutedIcon.style.display = 'block';
     }
 });
-
 
 document.getElementById('generateBtn').addEventListener('click', () => {
     const baseWidth = width < 750 ? 1080 : width * 2;
     const posterWidth = baseWidth;
     const posterHeight = posterWidth * (5 / 3);
-
     const pc = document.createElement('canvas');
     pc.width = posterWidth; pc.height = posterHeight;
     const pCtx = pc.getContext('2d');
@@ -1326,11 +666,9 @@ document.getElementById('generateBtn').addEventListener('click', () => {
     pCtx.fillText("「破碎重整计划」治愈花园 No." + gardenNo, posterWidth / 2, posterHeight * 0.94);
 
     document.getElementById('poster-img').src = pc.toDataURL('image/png');
-    
     const now = new Date();
     const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
     document.getElementById('poster-time').textContent = `生成时间：${dateStr}`;
-
     document.getElementById('poster-modal').classList.add('show');
     document.getElementById('poster-modal').style.display = 'flex';
 });
@@ -1345,6 +683,14 @@ function animate() {
     if(currentState===STATE.BROKEN) shards.forEach(s=>s.update()); 
     shards.forEach(s=>s.draw(ctx)); 
     flowers.forEach(f=>{f.update();f.draw(ctx);});
+    
+    // 更新粒子
+    for(let i=particles.length-1; i>=0; i--) {
+        particles[i].update();
+        particles[i].draw(ctx);
+        if(particles[i].life <= 0) particles.splice(i, 1);
+    }
+    
     requestAnimationFrame(animate); 
 }
 
@@ -1353,43 +699,24 @@ initChoiceModal();
 resize();
 animate();
 
-// 尝试在页面加载时播放音乐
 let musicStarted = false;
 function startMusic() {
     if(musicStarted) return;
     musicStarted = true;
-
     const bgMusic = document.getElementById('bgMusic');
     bgMusic.volume = 0;
     bgMusic.play().then(() => {
-        // 音量淡入
         let targetVolume = 0.4;
         let fadeInInterval = setInterval(() => {
             if(bgMusic.volume < targetVolume) {
                 bgMusic.volume = Math.min(bgMusic.volume + 0.02, targetVolume);
-            } else {
-                clearInterval(fadeInInterval);
-            }
+            } else { clearInterval(fadeInInterval); }
         }, 50);
-
-        // 显示音乐控制按钮
-        setTimeout(() => {
-            document.getElementById('musicControl').classList.add('visible');
-        }, 1000);
-    }).catch(err => {
-        console.log('自动播放被阻止，等待用户交互:', err);
-        musicStarted = false; // 重置标志，允许在用户交互时重试
-    });
+        setTimeout(() => { document.getElementById('musicControl').classList.add('visible'); }, 1000);
+    }).catch(err => { musicStarted = false; });
 }
-
-// 页面加载时尝试播放
-setTimeout(() => {
-    startMusic();
-}, 1000);
-
-setTimeout(() => {
-    document.getElementById('choice-modal').classList.add('show');
-}, 500);
+setTimeout(() => { startMusic(); }, 1000);
+setTimeout(() => { document.getElementById('choice-modal').classList.add('show'); }, 500);
 </script>
 </body>
 </html>
